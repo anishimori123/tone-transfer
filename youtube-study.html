@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tone Studio - YouTube Study Mode</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background:#0a0a0a; color:#fff; height:100vh; display:flex; flex-direction:column; }
+.header { padding:12px 20px; background:#111; border-bottom:1px solid #222; display:flex; justify-content:space-between; align-items:center; }
+.header h1 { font-size:16px; font-weight:700; }
+.header h1 span { color:#00ff88; }
+.tabs { display:flex; gap:8px; background:#111; padding:8px 20px; border-bottom:1px solid #222; }
+.tab { padding:8px 16px; border-radius:20px; background:#1a1a1a; border:1px solid #333; color:#888; cursor:pointer; font-size:13px; font-weight:600; }
+.tab.active { background:#fff; color:#000; }
+.tab.yt.active { background:#ff0000; color:#fff; border-color:#ff0000; }
+.main { flex:1; display:flex; overflow:hidden; }
+.left, .right { width:50%; display:flex; flex-direction:column; overflow:hidden; }
+.left { background:#111; border-right:1px solid #222; }
+.right { background:#161616; }
+.panel-header { padding:12px 18px; border-bottom:1px solid #222; display:flex; justify-content:space-between; align-items:center; }
+.panel-header h3 { font-size:11px; text-transform:uppercase; letter-spacing:0.8px; color:#888; }
+.left-content { flex:1; overflow:auto; padding:18px; display:flex; flex-direction:column; gap:14px; }
+textarea, input[type=text] { width:100%; background:#1a1a1a; border:1px solid #333; border-radius:12px; color:#fff; padding:14px; font-size:14px; line-height:1.5; resize:none; outline:none; font-family:inherit; }
+textarea:focus, input:focus { border-color:#00ff88; }
+#inputText { min-height:120px; }
+#ytUrl { min-height:44px; height:44px; padding:12px 14px; }
+#ytTranscript { min-height:160px; }
+.controls { display:flex; flex-wrap:wrap; gap:8px; }
+.btn { padding:8px 14px; border-radius:20px; border:1px solid #333; background:#1a1a1a; color:#fff; font-size:12px; font-weight:600; cursor:pointer; }
+.btn.primary { background:#00ff88; color:#000; border-color:#00ff88; }
+.btn.yt { background:#ff0000; color:#fff; border-color:#ff0000; }
+.btn.small { padding:6px 10px; font-size:11px; }
+select { background:#1a1a1a; border:1px solid #333; color:#fff; padding:8px 12px; border-radius:20px; font-size:13px; outline:none; max-width:240px; }
+.right-content { flex:1; overflow:auto; padding:18px; display:flex; flex-direction:column; gap:14px; }
+.output-bubble { background:#222; border:1px solid #333; border-radius:16px; padding:18px; font-size:15px; line-height:1.6; min-height:100px; }
+.banner { background:#1a2e1a; border:1px solid #00ff88; color:#00ff88; padding:8px 12px; border-radius:8px; font-size:11px; display:none; }
+.banner.show { display:block; }
+.traits { background:#1a1a1a; border:1px solid #222; border-radius:12px; padding:12px; }
+.traits h4 { font-size:11px; text-transform:uppercase; color:#888; margin-bottom:8px; }
+.traits ul { list-style:none; display:flex; flex-direction:column; gap:4px; }
+.traits li { font-size:12px; color:#ccc; }
+.traits li::before { content:"• "; color:#00ff88; }
+.yt-card { background:#1a0f0f; border:1px solid #ff000033; border-radius:12px; padding:12px; display:none; }
+.yt-card.show { display:block; }
+.yt-card h4 { color:#ff4444; font-size:11px; text-transform:uppercase; margin-bottom:8px; }
+.yt-stat { display:flex; justify-content:space-between; font-size:11px; color:#aaa; margin-bottom:4px; }
+.toggle-row { display:flex; align-items:center; gap:8px; font-size:12px; color:#888; }
+</style>
+</head>
+<body>
+<div class="header"><h1><span>///</span> TONE STUDIO • YouTube Study</h1><div style="font-size:11px;color:#666;">Pure Transfer • Interview Ready</div></div>
+<div class="tabs">
+<button class="tab active" id="tabWrite" onclick="switchTab('write')">✍️ Write</button>
+<button class="tab yt" id="tabYT" onclick="switchTab('yt')">📺 Study from YouTube</button>
+</div>
+<div class="main">
+<div class="left">
+<div class="panel-header"><h3 id="leftTitle">Your Original</h3><div class="toggle-row"><input type="checkbox" id="autoFix" checked> Auto-fix <input type="checkbox" id="profFix" checked style="margin-left:8px"> Pro vocab</div></div>
+<div class="left-content" id="writePanel">
+<textarea id="inputText" placeholder="e.g. now lets do this and we will be done">now lets do this and we will be done</textarea>
+<div class="controls">
+<button class="btn small" onclick="loadExample('broken')">⚠ Broken test</button>
+<button class="btn small" onclick="loadExample('track')">🎵 Track</button>
+<button class="btn small" onclick="loadExample('interview')">🎙️ Interview</button>
+</div>
+<div style="display:flex; gap:8px; align-items:center;"><label style="font-size:11px;color:#666;">Character:</label><select id="leftChar" onchange="syncChar('left')"></select></div>
+<div id="writeBanner" class="banner"></div>
+</div>
+<div class="left-content" id="ytPanel" style="display:none;">
+<div style="background:#1a0f0f; border:1px solid #333; border-radius:8px; padding:10px; font-size:11px; color:#aaa;"> <b style="color:#ff6666;">How to get transcript:</b> YouTube → ...More → Show transcript → Off timestamps → Copy 2-3 min → Paste below. Direct scraping blocked, this is 10 sec. </div>
+<input type="text" id="ytUrl" placeholder="YouTube URL (for naming) e.g. Jensen Huang GTC 2024">
+<textarea id="ytTranscript" placeholder="Paste transcript here..."></textarea>
+<div class="controls">
+<button class="btn yt" onclick="analyzeYT()">Analyze Tone →</button>
+<button class="btn small" onclick="loadYTSample('jensen')">Load Jensen</button>
+<button class="btn small" onclick="loadYTSample('jamie')">Load Jamie</button>
+<button class="btn small" onclick="loadYTSample('noah')">Load Noah</button>
+</div>
+<div id="ytResult" class="yt-card"></div>
+</div>
+</div>
+<div class="right">
+<div class="panel-header"><div style="display:flex; align-items:center; gap:8px;"><select id="rightChar" onchange="syncChar('right')" style="font-weight:700;"></select><span style="font-size:10px; background:#00ff88; color:#000; padding:2px 6px; border-radius:10px; font-weight:700;">PURE</span></div><div class="toggle-row"><input type="checkbox" id="interviewMode" checked> 🎙️ Interview Ready</div></div>
+<div class="right-content">
+<div id="output" class="output-bubble"></div>
+<div class="controls"><button class="btn primary" onclick="copyOutput()">Copy</button><button class="btn" onclick="transform()">Regenerate</button></div>
+<div id="traits" class="traits"></div>
+</div>
+</div>
+</div>
+<script>
+const baseChars=[
+{id:'dj', name:'🎧 Famous DJ', group:'DJ & Artists', traits:['Keeps your words + 🔑','No extra sentences'], fn:t=>t+' 🔑'},
+{id:'jamie', name:'💼 Jamie Dimon', group:'CEO Interview Suite', traits:['Fortress balance sheet','Disciplined, prudent','Long-term shareholder value'], fn:t=>pureJamie(t)},
+{id:'jensen', name:'🟩 Jensen Huang', group:'CEO Interview Suite', traits:['Accelerated computing','AI factory / platform','New computing era'], fn:t=>pureJensen(t)},
+{id:'zuck', name:'👤 Mark Zuckerberg', group:'CEO Interview Suite', traits:['Building long-term','Community'], fn:t=>pureZuck(t)},
+{id:'coach', name:'🏈 Football Coach', group:'Sports Energy', traits:['Proud of our guys - same sentence','Execute, fundamentals'], fn:t=>pureCoach(t)},
+{id:'noah', name:'⚡ Noah Lyles', group:'Sports Energy', traits:['Fastest man energy - caps','Why Not You vibe inside same sentence'], fn:t=>pureNoah(t)},
+];
+let customVoices=JSON.parse(localStorage.getItem('ytVoices_v2')||'[]');
+function pureJamie(t){ t=t.replace(/now lets do this/i,"Let's proceed in a disciplined manner").replace(/lets do this/i,"let's proceed in a disciplined manner").replace(/will be done/i,"complete this").replace(/do this/i,"proceed"); t=t.trim().split(/[.!?]+/)[0]; if(!/[.!?]$/.test(t)) t+='.'; return t.charAt(0).toUpperCase()+t.slice(1); }
+function pureJensen(t){ t=t.replace(/now lets do this/i,"Let's accelerate this").replace(/lets do this/i,"let's accelerate this").replace(/will be done/i,"complete this platform").replace(/do this/i,"accelerate this"); t=t.trim().split(/[.!?]+/)[0]; if(!/[.!?]$/.test(t)) t+='.'; return t.charAt(0).toUpperCase()+t.slice(1); }
+function pureZuck(t){ t=t.replace(/now lets/i,"Let's").replace(/lets/i,"let's").replace(/do this/i,"build this").replace(/will be done/i,"get it done"); t=t.trim().split(/[.!?]+/)[0]; if(!/[.!?]$/.test(t)) t+='.'; return t.charAt(0).toUpperCase()+t.slice(1); }
+function pureCoach(t){ t=t.replace(/now lets do this/i,"Let's execute and finish this").replace(/lets do this/i,"let's execute and finish this").replace(/will be done/i,"get it done"); t=t.trim().split(/[.!?]+/)[0]; if(!/[.!?]$/.test(t)) t+='.'; return t.charAt(0).toUpperCase()+t.slice(1); }
+function pureNoah(t){ let w=t.split(' '); if(w.length>=2) w[1]=w[1].toUpperCase(); t=w.join(' ').split(/[.!?]+/)[0]; if(!t.endsWith('!')) t+='!'; return t.charAt(0).toUpperCase()+t.slice(1); }
+function populate(){ const l=document.getElementById('leftChar'), r=document.getElementById('rightChar'); l.innerHTML=''; r.innerHTML=''; const groups={}; [...baseChars, ...customVoices].forEach(c=>{ if(!groups[c.group]) groups[c.group]=[]; groups[c.group].push(c); }); Object.keys(groups).forEach(g=>{ const ogL=document.createElement('optgroup'); ogL.label=g; const ogR=document.createElement('optgroup'); ogR.label=g; groups[g].forEach(c=>{ const o1=document.createElement('option'); o1.value=c.id; o1.textContent=c.name; ogL.appendChild(o1); const o2=document.createElement('option'); o2.value=c.id; o2.textContent=c.name; ogR.appendChild(o2); }); l.appendChild(ogL); r.appendChild(ogR); }); l.value='jamie'; r.value='jamie'; }
+function syncChar(from){ const l=document.getElementById('leftChar'), r=document.getElementById('rightChar'); if(from==='left') r.value=l.value; else l.value=r.value; transform(); }
+function switchTab(t){ document.getElementById('tabWrite').classList.toggle('active', t==='write'); document.getElementById('tabYT').classList.toggle('active', t==='yt'); document.getElementById('writePanel').style.display=t==='write'?'flex':'none'; document.getElementById('ytPanel').style.display=t==='yt'?'flex':'none'; }
+function loadExample(type){ const ta=document.getElementById('inputText'); if(type==='broken') ta.value='i jusst finshed my new trakc im so happpy'; if(type==='track') ta.value='I just finished my new track, hope you like it'; if(type==='interview') ta.value='We finished our product, it was tough but we delivered strong results'; transform(); }
+function loadYTSample(who){ const ta=document.getElementById('ytTranscript'), url=document.getElementById('ytUrl'); if(who==='jensen'){ url.value='Jensen Huang GTC 2024'; ta.value='We are at the beginning of a new computing era. Accelerated computing is not about faster chips, it is about a new platform. Think of it as an AI factory. The more you buy, the more you save.'; } if(who==='jamie'){ url.value='Jamie Dimon Interview'; ta.value='We have a fortress balance sheet. We remain disciplined and focused on serving clients. We manage risk prudently. We prepare for a wide range of outcomes. We focus on long-term shareholder value.'; } if(who==='noah'){ url.value='Noah Lyles Post-Race'; ta.value='Man, listen, yall better be scared! When I get beat, next time you see me, you gonna be worried! What you have does not define what you can become! Why Not You!'; } }
+function analyzeYT(){ const tr=document.getElementById('ytTranscript').value.trim(), url=document.getElementById('ytUrl').value.trim(); if(tr.length<20){ alert('Paste transcript'); return; } const sents=tr.split(/[.!?]+/).filter(s=>s.trim()); const avg=Math.round(tr.split(/\s+/).length/sents.length); const name=url||`Custom ${customVoices.length+1}`; const id='yt_'+Date.now(); const voice={ id, name:`📺 ${name.slice(0,28)}`, group:'📺 YouTube Studied', traits:[`Avg ${avg} words/sent`, `Studied from transcript`, `Pure transfer`], transcript:tr, fn:t=>{ let out=t.split(/[.!?]+/)[0]; if(tr.toLowerCase().includes('fortress')) out=out.replace(/do this/i,'proceed with fortress discipline'); if(tr.toLowerCase().includes('accelerated')) out=out.replace(/do this/i,'accelerate this'); if(!/[.!?]$/.test(out)) out+='.'; return out.charAt(0).toUpperCase()+out.slice(1); } }; customVoices.push(voice); localStorage.setItem('ytVoices_v2', JSON.stringify(customVoices.map(v=>({id:v.id,name:v.name,group:v.group,traits:v.traits,transcript:v.transcript})))); populate(); document.getElementById('leftChar').value=id; document.getElementById('rightChar').value=id; const res=document.getElementById('ytResult'); res.classList.add('show'); res.innerHTML=`<h4>Analyzed: ${voice.name}</h4><div class="yt-stat"><span>Avg</span><span>${avg} words</span></div><button class="btn primary" style="margin-top:8px;width:100%" onclick="switchTab('write');transform();">Use This Voice →</button>`; switchTab('write'); transform(); }
+function transform(){ let text=document.getElementById('inputText').value.trim(); if(!text){ document.getElementById('output').textContent='Type something...'; return; } const charId=document.getElementById('rightChar').value; let c=[...baseChars, ...customVoices].find(x=>x.id===charId)||baseChars[0]; let out=c.fn(text); const inCount=(text.match(/[.!?]+/g)||[]).length||1; let outCount=(out.match(/[.!?]+/g)||[]).length||1; if(outCount>inCount){ out=out.split(/[.!?]+/).slice(0,inCount).join('. ')+'.'; } document.getElementById('output').textContent=out; document.getElementById('traits').innerHTML=`<h4>${c.name} • Pure Transfer</h4><ul>${c.traits.map(t=>`<li>${t}</li>`).join('')}<li>No extra sentences: ${inCount} → ${(out.match(/[.!?]+/g)||[]).length||1}</li></ul>`; }
+function copyOutput(){ navigator.clipboard.writeText(document.getElementById('output').textContent); }
+document.getElementById('inputText').addEventListener('input', transform);
+populate(); transform();
+</script>
+</body>
+</html>
